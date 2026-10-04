@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  VOLUNTEER
+  NGO
+}
+
+enum OpportunityStatus {
+  OPEN
+  CLOSED
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  role          Role     @default(VOLUNTEER)
+  name          String
+  bio           String?
+  contactInfo   String?
+  location      String?
+  interests     String[] @default([])
+  skills        String[] @default([])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  opportunities Opportunity[] // For NGOs
+  applications  Application[] // For Volunteers
+}
+
+model Opportunity {
+  id          String            @id @default(uuid())
+  title       String
+  description String
+  location    String
+  date        DateTime
+  status      OpportunityStatus @default(OPEN)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  ngoId       String
+  ngo         User              @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+
+  applications Application[]
+}
+
+model Application {
+  id             String            @id @default(uuid())
+  status         ApplicationStatus @default(PENDING)
+  appliedAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  volunteerId    String
+  volunteer      User              @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+
+  opportunityId  String
+  opportunity    Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@unique([volunteerId, opportunityId])
+}
